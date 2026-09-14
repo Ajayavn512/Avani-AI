@@ -1,35 +1,25 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import OpenAI from "openai";
 
 dotenv.config();
 
 const app = express();
+
 const PORT = process.env.PORT || 3000;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 app.use(cors());
 app.use(express.json());
 
-const apiKey = process.env.OPENROUTER_API_KEY;
-
-const client = apiKey
-  ? new OpenAI({
-      apiKey: apiKey,
-      baseURL: "https://openrouter.ai/api/v1",
-    })
-  : null;
-
-// HOME / STATUS
 app.get("/", (req, res) => {
   res.json({
     status: "online",
-    message: "Avani AI backend is running 🚀",
-    mode: client ? "AI Mode" : "API KEY MISSING",
+    message: "Avani AI Backend is running 🚀",
+    mode: OPENROUTER_API_KEY ? "AI Mode" : "API KEY MISSING"
   });
 });
 
-// AI CHAT
 app.post("/api/chat", async (req, res) => {
   try {
     const { message } = req.body;
@@ -37,26 +27,33 @@ app.post("/api/chat", async (req, res) => {
     if (!message || !message.trim()) {
       return res.status(400).json({
         success: false,
-        error: "Message is required",
+        error: "Message is required"
       });
     }
 
-    if (!client) {
+    if (!OPENROUTER_API_KEY) {
       return res.status(500).json({
         success: false,
-        error: "OPENROUTER_API_KEY is missing",
+        error: "OPENROUTER_API_KEY is missing"
       });
     }
 
-    console.log("👤 User:", message);
-
-    const completion = await client.chat.completions.create({
-      model: "Ajayavn512/DeepSeek-V4.1-Flash-bucket",
-
-      messages: [
-        {
-          role: "system",
-          content: `
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://ajayavn512.github.io/Avani-AI/",
+          "X-Title": "Avani AI"
+        },
+        body: JSON.stringify({
+          model: "Ajayavn512/DeepSeek-V4.1-Flash-bucket",
+          messages: [
+            {
+              role: "system",
+              content: `
 You are Avani, a helpful AI assistant.
 
 Your name is Avani.
@@ -68,28 +65,38 @@ If the user speaks English,
 reply naturally in English.
 
 Be friendly, intelligent, clear and conversational.
-Do not mention Demo Mode.
-          `,
-        },
-        {
-          role: "user",
-          content: message,
-        },
-      ],
-    });
+`
+            },
+            {
+              role: "user",
+              content: message
+            }
+          ]
+        })
+      }
+    );
 
-    const reply = completion.choices?.[0]?.message?.content;
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("OpenRouter Error:", data);
+
+      return res.status(response.status).json({
+        success: false,
+        error: data?.error?.message || "OpenRouter request failed"
+      });
+    }
+
+    const reply = data?.choices?.[0]?.message?.content;
 
     if (!reply) {
       throw new Error("No AI response received");
     }
 
-    console.log("🤖 Avani:", reply);
-
     res.json({
       success: true,
       reply,
-      mode: "ai",
+      mode: "ai"
     });
 
   } catch (error) {
@@ -97,24 +104,20 @@ Do not mention Demo Mode.
 
     res.status(500).json({
       success: false,
-      error: error?.message || "AI request failed",
+      error: error?.message || "AI request failed"
     });
   }
 });
 
-app.listen(PORT, () => {
-  console.log("");
+app.listen(PORT, "0.0.0.0", () => {
   console.log("🤖 ===============================");
   console.log("🤖       AVANI AI IS ONLINE");
   console.log("🤖 ===============================");
-  console.log(`🤖 Server: http://localhost:${PORT}`);
+  console.log(`🤖 Server running on port ${PORT}`);
 
-  if (client) {
+  if (OPENROUTER_API_KEY) {
     console.log("🤖 Mode: OPENROUTER AI");
-    console.log("🤖 Model: Ajayavn512/DeepSeek-V4.1-Flash-bucket");
   } else {
     console.log("🤖 Mode: API KEY MISSING ❌");
   }
-
-  console.log("");
 });
