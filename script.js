@@ -1,7 +1,7 @@
 const input = document.getElementById("userInput");
 const messages = document.getElementById("messages");
 
-const API_URL = "http://localhost:3000/api/chat";
+const API_URL = "https://avani-ai-q7mq.onrender.com/api/chat";
 
 // ========================================
 // AVANI STORAGE
