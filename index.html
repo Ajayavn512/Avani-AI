@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Avani AI</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+
+            <div class="logo">
+                <div class="logo-icon">A</div>
+                <div>
+                    <h2>Avani AI</h2>
+                    <span>Your AI Assistant</span>
+                </div>
+            </div>
+
+            <button class="new-chat" onclick="newChat()">
+                + New Chat
+            </button>
+
+            <div class="sidebar-menu">
+
+                <div class="menu-item active">
+                    💬 Chat
+                </div>
+
+                <div class="menu-item">
+                    🧠 Memory
+                </div>
+
+                <div class="menu-item">
+                    ⚙️ Settings
+                </div>
+
+            </div>
+
+            <div class="sidebar-bottom">
+                <div class="status">
+                    <span class="status-dot"></span>
+                    Avani is online
+                </div>
+            </div>
+
+        </aside>
+
+
+        <!-- Main Chat -->
+        <main class="chat-area">
+
+            <!-- Header -->
+            <header class="chat-header">
+
+                <div class="ai-profile">
+
+                    <div class="ai-avatar">
+                        A
+                    </div>
+
+                    <div>
+                        <h3>Avani</h3>
+                        <p>AI Assistant • Online</p>
+                    </div>
+
+                </div>
+
+                <button class="header-button">
+                    ⋮
+                </button>
+
+            </header>
+
+
+            <!-- Messages -->
+            <section class="messages" id="messages">
+
+                <div class="welcome">
+
+                    <div class="welcome-avatar">
+                        A
+                    </div>
+
+                    <h1>Hi, I'm Avani 👋</h1>
+
+                    <p>
+                        Your personal AI assistant.
+                        Ask me anything and let's get started.
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            <!-- Input -->
+            <div class="input-area">
+
+                <div class="input-box">
+
+                    <button class="icon-button" title="Attach">
+                        +
+                    </button>
+
+                    <input
+                        type="text"
+                        id="userInput"
+                        placeholder="Message Avani..."
+                        autocomplete="off"
+                    >
+
+                    <button
+                        class="send-button"
+                        onclick="sendMessage()"
+                    >
+                        ➤
+                    </button>
+
+                </div>
+
+                <p class="disclaimer">
+                    Avani AI can make mistakes. Check important information.
+                </p>
+
+            </div>
+
+        </main>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
