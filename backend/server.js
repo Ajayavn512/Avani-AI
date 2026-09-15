@@ -5,7 +5,6 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-
 const PORT = process.env.PORT || 3000;
 const apiKey = process.env.OPENROUTER_API_KEY?.trim();
 
@@ -56,7 +55,7 @@ app.post("/api/chat", async (req, res) => {
           "X-Title": "Avani AI"
         },
         body: JSON.stringify({
-          model: "deepseek/deepseek-chat-v3-0324:free",
+          model: "deepseek/deepseek-chat-v3-0324",
           messages: [
             {
               role: "system",
@@ -95,10 +94,9 @@ app.post("/api/chat", async (req, res) => {
 
     return res.json({
       success: true,
-      reply: reply,
+      reply,
       mode: "ai"
     });
-
   } catch (error) {
     console.error("❌ Avani Error:", error);
 
