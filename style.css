@@ -438,19 +438,3 @@ body {
         padding: 12px;
     }
 }
-
-/* Mobile chat polish */
-@media (max-width: 700px) {
-  body, .app { height: 100dvh; min-height: 100dvh; }
-  .chat-header { height: 64px; padding: 0 16px; }
-  .messages { padding: 20px 16px 16px; scroll-padding-bottom: 130px; -webkit-overflow-scrolling: touch; }
-  .message { margin-bottom: 16px; }
-  .message-content { max-width: 92%; padding: 14px 16px; border-radius: 18px; font-size: 16px; line-height: 1.62; overflow-wrap: anywhere; }
-  .message-content p + p { margin-top: 12px; }
-  .input-area { position: sticky; bottom: 0; z-index: 10; padding: 12px 14px max(18px, env(safe-area-inset-bottom)); background: linear-gradient(to top, #080b12 78%, rgba(8,11,18,.92)); }
-  .input-box { min-height: 58px; border-radius: 18px; padding: 8px; }
-  .input-box input { padding: 12px 10px; font-size: 16px; }
-  .icon-button, .send-button { width: 42px; height: 42px; }
-  .send-button { border-radius: 13px; }
-  .disclaimer { display: none; }
-}
