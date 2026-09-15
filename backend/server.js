@@ -93,16 +93,16 @@ app.post("/api/chat", async (req, res) => {
 
     console.log("🤖 Avani:", reply);
 
-    res.json({
+    return res.json({
       success: true,
-      reply,
+      reply: reply,
       mode: "ai"
     });
 
   } catch (error) {
     console.error("❌ Avani Error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: error?.message || "AI request failed"
     });
