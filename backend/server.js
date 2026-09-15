@@ -56,7 +56,7 @@ app.post("/api/chat", async (req, res) => {
           "X-Title": "Avani AI"
         },
         body: JSON.stringify({
-          model: "Ajayavn512/DeepSeek-V4.1-Flash-bucket",
+          model: "deepseek/deepseek-chat-v3-0324:free",
           messages: [
             {
               role: "system",
