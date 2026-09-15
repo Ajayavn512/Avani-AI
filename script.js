@@ -1106,3 +1106,174 @@ document.querySelectorAll(".sidebar *").forEach(element => {
   if (element.textContent.trim() === "Settings") element.addEventListener("click", showSettings);
 });
 document.querySelector(".header-button")?.addEventListener("click", showSettings);
+
+
+// Rich Markdown replies with free browser voice
+let avaniVoiceEnabled = JSON.parse(localStorage.getItem("avaniVoiceEnabled") || "true");
+
+function appendInlineMarkdown(target, text) {
+  String(text).split(/(\*\*[^*]+\*\*)/g).forEach(part => {
+    if (/^\*\*[^*]+\*\*$/.test(part)) {
+      const strong = document.createElement("strong");
+      strong.textContent = part.slice(2, -2);
+      target.appendChild(strong);
+    } else target.appendChild(document.createTextNode(part));
+  });
+}
+
+function speakAvani(text) {
+  if (!avaniVoiceEnabled || !("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(String(text).replace(/\*\*/g, "").replace(/[#*_]/g, " "));
+  const voices = window.speechSynthesis.getVoices();
+  utterance.voice = voices.find(voice => /hi-IN|en-IN/i.test(voice.lang)) || voices.find(voice => /en/i.test(voice.lang)) || null;
+  utterance.lang = utterance.voice?.lang || "en-IN";
+  utterance.rate = 1;
+  window.speechSynthesis.speak(utterance);
+}
+
+function addMessage(text, sender, save = true) {
+  const message = document.createElement("div");
+  message.className = `message ${sender}`;
+  const content = document.createElement("div");
+  content.className = "message-content";
+  const rawText = String(text || "").trim();
+
+  if (sender === "ai") {
+    rawText.split(/\n\s*\n+/).filter(Boolean).forEach(block => {
+      const lines = block.split("\n").map(line => line.trim()).filter(Boolean);
+      const isList = lines.some(line => /^[-*]\s+/.test(line));
+      if (isList) {
+        const list = document.createElement("ul");
+        lines.forEach(line => {
+          const item = document.createElement("li");
+          appendInlineMarkdown(item, line.replace(/^[-*]\s+/, ""));
+          list.appendChild(item);
+        });
+        content.appendChild(list);
+      } else {
+        const paragraph = document.createElement("p");
+        appendInlineMarkdown(paragraph, lines.join(" "));
+        content.appendChild(paragraph);
+      }
+    });
+  } else content.textContent = rawText;
+
+  message.appendChild(content);
+  messages.appendChild(message);
+  messages.scrollTop = messages.scrollHeight;
+  if (save) {
+    const chat = getCurrentChat();
+    if (!chat) return message;
+    chat.messages.push({ text: rawText, sender, time: new Date().toISOString() });
+    if (sender === "user" && chat.title === "New Chat") chat.title = rawText.length > 28 ? rawText.substring(0, 28) + "..." : rawText;
+    saveChats();
+    renderChatHistory();
+    if (sender === "ai") speakAvani(rawText);
+  }
+  return message;
+}
+
+const voiceButton = document.createElement("button");
+voiceButton.className = "header-button";
+voiceButton.id = "voiceToggle";
+voiceButton.title = "Toggle Avani voice";
+function updateVoiceButton() { voiceButton.textContent = avaniVoiceEnabled ? "🔊" : "🔇"; }
+updateVoiceButton();
+voiceButton.onclick = () => {
+  avaniVoiceEnabled = !avaniVoiceEnabled;
+  localStorage.setItem("avaniVoiceEnabled", JSON.stringify(avaniVoiceEnabled));
+  if (!avaniVoiceEnabled) window.speechSynthesis?.cancel();
+  updateVoiceButton();
+};
+document.querySelector(".chat-header")?.insertBefore(voiceButton, document.querySelector(".header-button"));
+
+
+// Make Markdown replies look like a real AI conversation
+(function () {
+  const richReplyStyle = document.createElement("style");
+  richReplyStyle.textContent = ".message-content p{margin:0}.message-content p+p{margin-top:12px}.message-content ul{margin:10px 0 0;padding-left:22px}.message-content li+li{margin-top:9px}.message-content strong{font-weight:700;color:#fff}";
+  document.head.appendChild(richReplyStyle);
+})();
+
+function addMessage(text, sender, save = true) {
+  const message = document.createElement("div");
+  message.className = `message ${sender}`;
+  const content = document.createElement("div");
+  content.className = "message-content";
+  const rawText = String(text || "").trim();
+
+  if (sender === "ai") {
+    const lines = rawText.replace(/\s+-\s+(?=\*\*)/g, "\n- ").split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    let list = null;
+    lines.forEach(line => {
+      const bullet = line.match(/^[-*]\s+(.+)/);
+      if (bullet) {
+        if (!list) { list = document.createElement("ul"); content.appendChild(list); }
+        const item = document.createElement("li");
+        appendInlineMarkdown(item, bullet[1]);
+        list.appendChild(item);
+      } else {
+        list = null;
+        const paragraph = document.createElement("p");
+        appendInlineMarkdown(paragraph, line);
+        content.appendChild(paragraph);
+      }
+    });
+  } else {
+    content.textContent = rawText;
+  }
+
+  message.appendChild(content);
+  messages.appendChild(message);
+  messages.scrollTop = messages.scrollHeight;
+  if (save) {
+    const chat = getCurrentChat();
+    if (!chat) return message;
+    chat.messages.push({ text: rawText, sender, time: new Date().toISOString() });
+    if (sender === "user" && chat.title === "New Chat") chat.title = rawText.length > 28 ? rawText.substring(0, 28) + "..." : rawText;
+    saveChats();
+    renderChatHistory();
+    if (sender === "ai") speakAvani(rawText);
+  }
+  return message;
+}
+
+
+// Complete free browser voice and professional reply formatting
+var avaniVoiceEnabled = JSON.parse(localStorage.getItem("avaniVoiceEnabled") || "true");
+function appendInlineMarkdown(target, text) {
+  String(text).split(/(\*\*[^*]+\*\*)/g).forEach(part => {
+    if (/^\*\*[^*]+\*\*$/.test(part)) {
+      const strong = document.createElement("strong");
+      strong.textContent = part.slice(2, -2);
+      target.appendChild(strong);
+    } else target.appendChild(document.createTextNode(part));
+  });
+}
+function speakAvani(text) {
+  if (!avaniVoiceEnabled || !("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(String(text).replace(/\*\*/g, "").replace(/[#*_]/g, " "));
+  const voices = window.speechSynthesis.getVoices();
+  utterance.voice = voices.find(voice => /hi-IN|en-IN/i.test(voice.lang)) || voices.find(voice => /en/i.test(voice.lang)) || null;
+  utterance.lang = utterance.voice ? utterance.voice.lang : "en-IN";
+  utterance.rate = 1;
+  window.speechSynthesis.speak(utterance);
+}
+(function addVoiceControl() {
+  if (document.getElementById("voiceToggle")) return;
+  const voiceButton = document.createElement("button");
+  voiceButton.className = "header-button";
+  voiceButton.id = "voiceToggle";
+  voiceButton.title = "Voice on/off";
+  const updateVoiceButton = () => { voiceButton.textContent = avaniVoiceEnabled ? "🔊" : "🔇"; };
+  updateVoiceButton();
+  voiceButton.onclick = () => {
+    avaniVoiceEnabled = !avaniVoiceEnabled;
+    localStorage.setItem("avaniVoiceEnabled", JSON.stringify(avaniVoiceEnabled));
+    if (!avaniVoiceEnabled) window.speechSynthesis.cancel();
+    updateVoiceButton();
+  };
+  document.querySelector(".chat-header")?.insertBefore(voiceButton, document.querySelector(".header-button"));
+})();
