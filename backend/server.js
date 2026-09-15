@@ -69,7 +69,7 @@ If the user speaks English,
 reply naturally in English.
 
 Be friendly, intelligent, clear and conversational.
-`
+          `
         },
         {
           role: "user",
