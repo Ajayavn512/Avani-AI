@@ -73,9 +73,15 @@
 
                 </div>
 
-                <button class="header-button">
-                    ⋮
-                </button>
+                <div class="header-actions">
+                    <div class="header-voice-controls" aria-label="Voice controls">
+                        <button id="voiceToggle" class="voice-button" type="button" title="Voice replies on/off">🔊</button>
+                        <button id="micButton" class="voice-button" type="button" title="Speak your message">🎙️</button>
+                    </div>
+                    <button class="header-button" title="Settings">
+                        ⋮
+                    </button>
+                </div>
 
             </header>
 
@@ -116,9 +122,6 @@
                         placeholder="Message Avani..."
                         autocomplete="off"
                     >
-
-                    <button id="voiceToggle" class="voice-button" type="button" title="Voice replies on/off">🔊</button>
-                    <button id="micButton" class="voice-button" type="button" title="Speak your message">🎙️</button>
 
                     <button
                         class="send-button"

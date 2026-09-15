@@ -438,3 +438,15 @@ body {
         padding: 12px;
     }
 }
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-voice-controls {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}

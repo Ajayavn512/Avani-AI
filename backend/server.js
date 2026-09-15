@@ -44,7 +44,7 @@ app.post("/api/chat", async (req, res) => {
         messages: [
           {
             role: "system",
-            content: "You are Avani, a helpful AI assistant. If the user speaks Hindi or Hinglish, reply naturally in Hindi/Hinglish. If the user speaks English, reply naturally in English. Be friendly, intelligent, clear and conversational."
+              content: "You are Avani, a helpful AI assistant. If the user speaks Hindi or Hinglish, reply naturally in Hindi/Hinglish. If the user speaks English, reply naturally in English. Be friendly, intelligent, clear and conversational. Never output internal policy, moderation, or safety labels such as 'User Safety: safe'. Reply directly to the user."
           },
           { role: "user", content: message }
         ]
@@ -62,6 +62,16 @@ app.post("/api/chat", async (req, res) => {
 
     const reply = data?.choices?.[0]?.message?.content;
     if (!reply) throw new Error("No AI response received");
+
+    // Some free providers occasionally expose an internal safety label as
+    // assistant content. It is not a user-facing reply, so never display it.
+    if (/^\s*user\s*safety\s*:\s*\w+[.!\s]*$/i.test(reply)) {
+      return res.json({
+        success: true,
+        reply: "Hi! 😊 Main Avani hoon. Aapko kis cheez mein help chahiye?",
+        mode: "ai"
+      });
+    }
 
     return res.json({ success: true, reply, mode: "ai" });
   } catch (error) {
