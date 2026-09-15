@@ -1051,3 +1051,58 @@ if (!currentChatId) {
 
 
 input.focus();
+
+// Professional response layout and settings
+function formatAvaniReply(text) {
+  const normalized = String(text || "").trim().replace(/\r/g, "");
+  if (normalized.includes("\n\n")) return normalized;
+  const sentences = normalized.match(/[^.!?।]+[.!?।]+|[^.!?।]+$/g) || [normalized];
+  if (sentences.length < 4) return normalized;
+  const groups = [];
+  for (let i = 0; i < sentences.length; i += 2) groups.push(sentences.slice(i, i + 2).join(" ").trim());
+  return groups.join("\n\n");
+}
+
+function addMessage(text, sender, save = true) {
+  const message = document.createElement("div");
+  message.className = `message ${sender}`;
+  const content = document.createElement("div");
+  content.className = "message-content";
+  const rawText = String(text || "").trim();
+  const displayText = sender === "ai" ? formatAvaniReply(rawText) : rawText;
+  const paragraphs = displayText.split(/\n\s*\n+/).filter(Boolean);
+  if (sender === "ai" && paragraphs.length > 1) {
+    paragraphs.forEach(paragraph => {
+      const block = document.createElement("p");
+      block.textContent = paragraph.replace(/\n+/g, " ").trim();
+      content.appendChild(block);
+    });
+  } else content.textContent = displayText;
+  message.appendChild(content);
+  messages.appendChild(message);
+  messages.scrollTop = messages.scrollHeight;
+  if (save) {
+    const chat = getCurrentChat();
+    if (!chat) return message;
+    chat.messages.push({ text: rawText, sender, time: new Date().toISOString() });
+    if (sender === "user" && chat.title === "New Chat") chat.title = rawText.length > 28 ? rawText.substring(0, 28) + "..." : rawText;
+    saveChats();
+    renderChatHistory();
+  }
+  return message;
+}
+
+function showSettings() {
+  const old = document.getElementById("avaniSettingsPanel");
+  if (old) return old.remove();
+  const panel = document.createElement("div");
+  panel.id = "avaniSettingsPanel";
+  panel.innerHTML = `<div class="memory-box"><div class="memory-header"><h2>⚙️ Settings</h2><button id="closeSettings">×</button></div><p>Avani stores chats and memory only in this browser.</p><div class="memory-item">✓ Chat history: on</div><div class="memory-item">✓ Memory: on</div><div class="memory-item">✓ Structured answers: on</div></div>`;
+  document.body.appendChild(panel);
+  document.getElementById("closeSettings").onclick = () => panel.remove();
+}
+
+document.querySelectorAll(".sidebar *").forEach(element => {
+  if (element.textContent.trim() === "Settings") element.addEventListener("click", showSettings);
+});
+document.querySelector(".header-button")?.addEventListener("click", showSettings);
