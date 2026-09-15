@@ -8,10 +8,13 @@ dotenv.config();
 const app = express();
 
 const PORT = process.env.PORT || 3000;
+const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+
 console.log(
   "🔐 OpenRouter key check:",
   apiKey ? `PRESENT (${apiKey.length} chars)` : "MISSING"
 );
+
 app.use(cors());
 app.use(express.json());
 
