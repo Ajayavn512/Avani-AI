@@ -1,0 +1,39 @@
+name: Activate Avani mobile fixes
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Activate mobile fix script
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          tag = '<script src="fix-v6.js?v=2"></script>'
+          if tag not in s:
+              s = s.replace('<script src="app-v5.js?v=1"></script>', '<script src="app-v5.js?v=1"></script>' + tag)
+              p.write_text(s, encoding="utf-8")
+          else:
+              print("fix-v6 already active")
+      - name: Commit activation
+        run: |
+          if git diff --quiet; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "fix: activate mobile chat fixes"
+          git push
