@@ -3,148 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Avani AI</title>
-
+    <meta name="theme-color" content="#0b1020">
+    <meta name="description" content="Avani AI — a personal AI assistant by Ajay.">
+    <title>Avani AI — Personal AI Assistant</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+    <div class="app" id="app">
+        <div class="mobile-overlay" id="mobileOverlay"></div>
 
-    <div class="app">
-
-        <!-- Sidebar -->
-        <aside class="sidebar">
-
-            <div class="logo">
-                <div class="logo-icon">A</div>
-                <div>
-                    <h2>Avani AI</h2>
-                    <span>Your AI Assistant</span>
-                </div>
-            </div>
-
-            <button class="new-chat" onclick="newChat()">
-                + New Chat
-            </button>
-
-            <div class="sidebar-menu">
-
-                <div class="menu-item active">
-                    💬 Chat
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-top">
+                <div class="logo">
+                    <div class="logo-icon">A</div>
+                    <div class="logo-copy">
+                        <h2>Avani AI</h2>
+                        <span>Personal AI Assistant</span>
+                    </div>
                 </div>
 
-                <div class="menu-item">
-                    🧠 Memory
+                <button class="new-chat" id="newChatButton" type="button">
+                    <span>＋</span> New Chat
+                </button>
+
+                <div id="avaniHistory" class="chat-history">
+                    <div class="history-title">Recent Chats</div>
+                    <div id="historyList"></div>
                 </div>
 
-                <div class="menu-item">
-                    ⚙️ Settings
-                </div>
-
+                <nav class="sidebar-menu" aria-label="Main navigation">
+                    <button class="menu-item active" id="chatNav" type="button"><span>💬</span> Chat</button>
+                    <button class="menu-item" id="memoryNav" type="button"><span>🧠</span> Memory</button>
+                    <button class="menu-item" id="settingsNav" type="button"><span>⚙️</span> Settings</button>
+                </nav>
             </div>
 
             <div class="sidebar-bottom">
-                <div class="status">
-                    <span class="status-dot"></span>
-                    Avani is online
-                </div>
+                <div class="status"><span class="status-dot"></span><span>Avani is online</span></div>
+                <div class="version">AVANI AI <span>v2</span></div>
             </div>
-
         </aside>
 
-
-        <!-- Main Chat -->
         <main class="chat-area">
-
-            <!-- Header -->
             <header class="chat-header">
-
-                <div class="ai-profile">
-
-                    <div class="ai-avatar">
-                        A
+                <div class="mobile-header-left">
+                    <button class="icon-button header-menu" id="sidebarToggle" type="button" title="Open menu" aria-label="Open menu">☰</button>
+                    <div class="ai-profile">
+                        <div class="ai-avatar">A</div>
+                        <div>
+                            <h3>Avani</h3>
+                            <p><span class="online-dot"></span> AI Assistant · Online</p>
+                        </div>
                     </div>
-
-                    <div>
-                        <h3>Avani</h3>
-                        <p>AI Assistant • Online</p>
-                    </div>
-
                 </div>
-
                 <div class="header-actions">
-                    <div class="header-voice-controls" aria-label="Voice controls">
-                        <button id="voiceToggle" class="voice-button" type="button" title="Voice replies on/off">🔊</button>
-                        <button id="micButton" class="voice-button" type="button" title="Speak your message">🎙️</button>
-                    </div>
-                    <button class="header-button" title="Settings">
-                        ⋮
-                    </button>
+                    <button id="voiceToggle" class="voice-button" type="button" title="Voice replies on/off" aria-label="Toggle voice replies">🔊</button>
+                    <button id="micButton" class="voice-button" type="button" title="Speak your message" aria-label="Speak your message">🎙️</button>
+                    <button id="clearChatButton" class="header-button" type="button" title="Clear current chat" aria-label="Clear current chat">⌫</button>
                 </div>
-
             </header>
 
+            <section class="messages" id="messages" aria-live="polite"></section>
 
-            <!-- Messages -->
-            <section class="messages" id="messages">
-
-                <div class="welcome">
-
-                    <div class="welcome-avatar">
-                        A
-                    </div>
-
-                    <h1>Hi, I'm Avani 👋</h1>
-
-                    <p>
-                        Your personal AI assistant.
-                        Ask me anything and let's get started.
-                    </p>
-
-                </div>
-
-            </section>
-
-
-            <!-- Input -->
             <div class="input-area">
+                <div class="quick-prompts" id="quickPrompts">
+                    <button type="button" data-prompt="Explain this in simple Hindi">💡 Explain simply</button>
+                    <button type="button" data-prompt="Help me write a professional message">✍️ Write for me</button>
+                    <button type="button" data-prompt="Help me plan my next project step by step">🚀 Plan a project</button>
+                    <button type="button" data-prompt="Give me 5 creative ideas for my next video">🎬 Video ideas</button>
+                </div>
 
                 <div class="input-box">
-
-                    <button class="icon-button" title="Attach">
-                        +
-                    </button>
-
-                    <input
-                        type="text"
-                        id="userInput"
-                        placeholder="Message Avani..."
-                        autocomplete="off"
-                    >
-
-                    <button
-                        class="send-button"
-                        onclick="sendMessage()"
-                    >
-                        ➤
-                    </button>
-
+                    <button class="attach-button" id="attachButton" type="button" title="Attach a text file" aria-label="Attach a text file">＋</button>
+                    <input id="fileInput" type="file" hidden accept=".txt,.md,.json,.csv,.html,.css,.js">
+                    <textarea id="userInput" rows="1" placeholder="Message Avani..." autocomplete="off" aria-label="Message Avani"></textarea>
+                    <button class="send-button" id="sendButton" type="button" aria-label="Send message">➤</button>
                 </div>
-
-                <p class="disclaimer">
-                    Avani AI can make mistakes. Check important information.
-                </p>
-
+                <p class="input-hint"><span>Enter</span> to send · <span>Shift + Enter</span> for a new line</p>
+                <p class="disclaimer">Avani AI can make mistakes. Check important information.</p>
             </div>
 
             <footer class="avani-footer">Made with <span>♥</span> by Ajay · Avani AI</footer>
-
         </main>
+    </div>
 
+    <div class="modal" id="memoryModal" hidden>
+        <div class="modal-card">
+            <div class="modal-head"><div><span class="eyebrow">PERSONALIZATION</span><h2>Avani Memory</h2></div><button class="close-modal" data-close="memoryModal" type="button">×</button></div>
+            <p class="modal-subtitle">Useful details Avani has saved locally in this browser.</p>
+            <div id="memoryList" class="memory-list"></div>
+            <button class="danger-button" id="clearMemoryButton" type="button">Clear saved memory</button>
+        </div>
+    </div>
+
+    <div class="modal" id="settingsModal" hidden>
+        <div class="modal-card">
+            <div class="modal-head"><div><span class="eyebrow">AVANI AI</span><h2>Settings</h2></div><button class="close-modal" data-close="settingsModal" type="button">×</button></div>
+            <div class="settings-list">
+                <label class="setting-row"><span><strong>Dark mode</strong><small>Use Avani's dark interface</small></span><input id="themeToggle" type="checkbox" checked><i></i></label>
+                <label class="setting-row"><span><strong>Quick prompts</strong><small>Show helpful starter actions above the input</small></span><input id="quickPromptToggle" type="checkbox" checked><i></i></label>
+                <label class="setting-row"><span><strong>Voice replies</strong><small>Read Avani's replies aloud when supported</small></span><input id="voiceSettingToggle" type="checkbox"><i></i></label>
+            </div>
+            <div class="settings-note"><b>Privacy:</b> chats and memory are stored in your browser's local storage. Your messages are sent to the configured Avani backend when you press Send.</div>
+        </div>
     </div>
 
     <script src="script.js"></script>
-
 </body>
 </html>
