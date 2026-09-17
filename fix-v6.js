@@ -47,11 +47,12 @@
     return list.find(c => c.id === id) || list[0] || null;
   }
   function clearCurrentChat(){
-    const c = currentChatSafe();
+    const c = typeof window.currentChat === "function" ? window.currentChat() : currentChatSafe();
     if(!c) return toast("No chat to clear");
     if(!confirm("Clear all messages from this chat?")) return;
     c.messages = []; c.title = "New Chat";
-    localStorage.setItem("avaniChats", JSON.stringify(JSON.parse(localStorage.getItem("avaniChats")||"[]").map(x=>x.id===c.id?c:x)));
+    if(typeof window.saveChats === "function") window.saveChats();
+    else localStorage.setItem("avaniChats", JSON.stringify(JSON.parse(localStorage.getItem("avaniChats")||"[]").map(x=>x.id===c.id?c:x)));
     if(typeof window.renderChat === "function") window.renderChat();
     if(typeof window.renderHistory === "function") window.renderHistory();
     toast("Current chat cleared");
@@ -59,9 +60,7 @@
   function clearAllChats(){
     if(!confirm("Delete all saved chats? This cannot be undone.")) return;
     localStorage.removeItem("avaniChats"); localStorage.removeItem("avaniCurrentChat");
-    if(typeof window.newChat === "function") window.newChat();
-    else location.reload();
-    toast("All saved chats cleared");
+    location.reload();
   }
 
   function showAttachment(file){
