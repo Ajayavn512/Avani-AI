@@ -1,1053 +1,390 @@
 const input = document.getElementById("userInput");
 const messages = document.getElementById("messages");
-
+const sendButton = document.getElementById("sendButton");
 const API_URL = "https://avani-ai-q7mq.onrender.com/api/chat";
 
-// ========================================
-// AVANI STORAGE
-// ========================================
+let chats = JSON.parse(localStorage.getItem("avaniChats") || "[]");
+let currentChatId = localStorage.getItem("avaniCurrentChat") || null;
+let memory = JSON.parse(localStorage.getItem("avaniMemory") || "[]");
+let voiceEnabled = localStorage.getItem("avaniVoice") === "true";
 
-let chats = JSON.parse(localStorage.getItem("avaniChats")) || [];
-let currentChatId = localStorage.getItem("avaniCurrentChat");
+const $ = (id) => document.getElementById(id);
 
-let memory = JSON.parse(localStorage.getItem("avaniMemory")) || [];
-
-
-// ========================================
-// CREATE NEW CHAT
-// ========================================
+function saveState() {
+    localStorage.setItem("avaniChats", JSON.stringify(chats));
+    localStorage.setItem("avaniCurrentChat", currentChatId || "");
+    localStorage.setItem("avaniMemory", JSON.stringify(memory));
+    localStorage.setItem("avaniVoice", String(voiceEnabled));
+}
 
 function createNewChat() {
-
-    const chat = {
-        id: Date.now().toString(),
-        title: "New Chat",
-        messages: []
-    };
-
+    const chat = { id: Date.now().toString(), title: "New Chat", messages: [] };
     chats.unshift(chat);
-
     currentChatId = chat.id;
-
-    saveChats();
-
+    saveState();
     renderChat();
-
     renderChatHistory();
-
     input.focus();
+    closeSidebar();
 }
 
-
-// ========================================
-// SAVE CHATS
-// ========================================
-
-function saveChats() {
-
-    localStorage.setItem(
-        "avaniChats",
-        JSON.stringify(chats)
-    );
-
-    localStorage.setItem(
-        "avaniCurrentChat",
-        currentChatId
-    );
-}
-
-
-// ========================================
-// GET CURRENT CHAT
-// ========================================
+// Backward-compatible name used by older versions of the UI.
+window.newChat = createNewChat;
 
 function getCurrentChat() {
-
-    return chats.find(
-        chat => chat.id === currentChatId
-    );
+    return chats.find(chat => chat.id === currentChatId) || null;
 }
 
-
-// ========================================
-// RENDER CHAT
-// ========================================
+function welcomeMarkup() {
+    return `<div class="welcome">
+        <div class="welcome-avatar">A</div>
+        <h1>Hi, I'm Avani 👋</h1>
+        <p>Your personal AI assistant.<br>Ask me anything and let's build something useful together.</p>
+        <div class="welcome-badge">✦ Ready to help · Fast · Private local history</div>
+    </div>`;
+}
 
 function renderChat() {
-
     const chat = getCurrentChat();
-
-    if (!chat) {
-
-        messages.innerHTML = `
-            <div class="welcome">
-                <div class="welcome-avatar">A</div>
-
-                <h1>Hi, I'm Avani 👋</h1>
-
-                <p>
-                    Your personal AI assistant.
-                    Ask me anything and let's get started.
-                </p>
-            </div>
-        `;
-
-        return;
-    }
-
-
     messages.innerHTML = "";
-
-
-    if (chat.messages.length === 0) {
-
-        messages.innerHTML = `
-            <div class="welcome">
-
-                <div class="welcome-avatar">A</div>
-
-                <h1>Hi, I'm Avani 👋</h1>
-
-                <p>
-                    Your personal AI assistant.
-                    Ask me anything and let's get started.
-                </p>
-
-            </div>
-        `;
-
+    if (!chat || chat.messages.length === 0) {
+        messages.innerHTML = welcomeMarkup();
         return;
     }
-
-
-    chat.messages.forEach(message => {
-
-        addMessage(
-            message.text,
-            message.sender,
-            false
-        );
-
-    });
+    chat.messages.forEach(item => addMessage(item.text, item.sender, false));
+    scrollToBottom();
 }
 
-
-// ========================================
-// ADD MESSAGE
-// ========================================
-
 function addMessage(text, sender, save = true) {
-
     const message = document.createElement("div");
-
-    message.className =
-        `message ${sender}`;
-
-
-    const content =
-        document.createElement("div");
-
-    content.className =
-        "message-content";
-
-
-    content.textContent = text;
-
-
+    message.className = `message ${sender}`;
+    const content = document.createElement("div");
+    content.className = "message-content";
+    content.textContent = String(text ?? "");
     message.appendChild(content);
-
     messages.appendChild(message);
-
-
-    messages.scrollTop =
-        messages.scrollHeight;
-
+    scrollToBottom();
 
     if (save) {
-
         const chat = getCurrentChat();
-
-        if (!chat) return;
-
-
-        chat.messages.push({
-
-            text: text,
-
-            sender: sender,
-
-            time: new Date().toISOString()
-
-        });
-
-
-        // First user message becomes title
-        if (
-            sender === "user" &&
-            chat.title === "New Chat"
-        ) {
-
-            chat.title =
-                text.length > 28
-                    ? text.substring(0, 28) + "..."
-                    : text;
-
+        if (!chat) return message;
+        chat.messages.push({ text: String(text ?? ""), sender, time: new Date().toISOString() });
+        if (sender === "user" && chat.title === "New Chat") {
+            chat.title = text.length > 32 ? text.substring(0, 32) + "…" : text;
         }
-
-
-        saveChats();
-
+        saveState();
         renderChatHistory();
-
     }
-
-
     return message;
 }
 
+function scrollToBottom() {
+    requestAnimationFrame(() => { messages.scrollTop = messages.scrollHeight; });
+}
 
-// ========================================
-// SEND MESSAGE
-// ========================================
+async function sendMessage(prefilledText = null) {
+    const text = (prefilledText ?? input.value).trim();
+    if (!text || input.disabled) return;
 
-async function sendMessage() {
-
-    const text =
-        input.value.trim();
-
-
-    if (text === "") return;
-
-
-    // Automatically create chat
-    if (!getCurrentChat()) {
-
-        createNewChat();
-
-    }
-
-
-    addMessage(
-        text,
-        "user"
-    );
-
-
+    if (!getCurrentChat()) createNewChat();
+    addMessage(text, "user");
     input.value = "";
+    autoResizeInput();
+    setBusy(true);
 
-    input.disabled = true;
-
-
-    const thinking =
-        addMessage(
-            "Avani is thinking... 🤔",
-            "ai",
-            false
-        );
-
+    const thinking = document.createElement("div");
+    thinking.className = "message ai";
+    thinking.innerHTML = `<div class="message-content"><span class="thinking-dots">Avani is thinking <b>•</b><b>•</b><b>•</b></span></div>`;
+    messages.appendChild(thinking);
+    scrollToBottom();
 
     try {
-
-        const response =
-            await fetch(
-                API_URL,
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        message: text
-                    })
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: text })
+        });
+        let data = {};
+        try { data = await response.json(); } catch (_) {}
+        if (!response.ok) throw new Error(data.error || `Server error (${response.status})`);
         thinking.remove();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.error ||
-                "Something went wrong."
-            );
-
-        }
-
-
-        addMessage(
-            data.reply,
-            "ai"
-        );
-
-
-        // Automatically detect useful memory
+        const reply = data.reply || "I received your message, but no reply was returned.";
+        addMessage(reply, "ai");
         detectMemory(text);
-
-
+        speakReply(reply);
     } catch (error) {
-
-        console.error(
-            "Avani Error:",
-            error
-        );
-
-
+        console.error("Avani Error:", error);
         thinking.remove();
-
-
-        addMessage(
-            "Sorry 😔 Avani se connection nahi ho pa raha. Backend check karo.",
-            "ai"
-        );
-
+        addMessage(`Sorry 😔 Avani se connection nahi ho pa raha.\n\n${error.message || "Please try again."}`, "ai");
+    } finally {
+        setBusy(false);
+        input.focus();
     }
-
-
-    input.disabled = false;
-
-    input.focus();
 }
 
-
-// ========================================
-// CHAT HISTORY
-// ========================================
+function setBusy(busy) {
+    input.disabled = busy;
+    if (sendButton) sendButton.disabled = busy;
+}
 
 function renderChatHistory() {
-
-    const sidebar =
-        document.querySelector(
-            ".sidebar"
-        );
-
-
-    if (!sidebar) return;
-
-
-    let history =
-        document.getElementById(
-            "avaniHistory"
-        );
-
-
-    if (!history) {
-
-        history =
-            document.createElement(
-                "div"
-            );
-
-        history.id =
-            "avaniHistory";
-
-
-        history.innerHTML = `
-            <div class="history-title">
-                Recent Chats
-            </div>
-        `;
-
-
-        const newChatButton =
-            sidebar.querySelector(
-                "button"
-            );
-
-
-        if (newChatButton) {
-
-            newChatButton.after(
-                history
-            );
-
-        }
-
+    const list = $("historyList");
+    if (!list) return;
+    list.innerHTML = "";
+    if (!chats.length) {
+        list.innerHTML = `<div class="empty-memory" style="padding:10px 5px;text-align:left">No chats yet</div>`;
+        return;
     }
-
-
-    const title =
-        history.querySelector(
-            ".history-title"
-        );
-
-
-    history.innerHTML = "";
-
-    history.appendChild(title);
-
-
-    chats.forEach(chat => {
-
-        const item =
-            document.createElement(
-                "div"
-            );
-
-
-        item.className =
-            "history-item";
-
-
-        if (
-            chat.id === currentChatId
-        ) {
-
-            item.classList.add(
-                "active"
-            );
-
-        }
-
-
-        item.innerHTML = `
-            <span>💬</span>
-            <span class="history-name">
-                ${escapeHTML(chat.title)}
-            </span>
-            <button
-                class="delete-chat"
-                title="Delete chat"
-            >
-                ×
-            </button>
-        `;
-
-
-        item.addEventListener(
-            "click",
-            function(event) {
-
-                if (
-                    event.target.classList
-                        .contains("delete-chat")
-                ) {
-
-                    deleteChat(
-                        chat.id
-                    );
-
-                    return;
-
-                }
-
-
-                currentChatId =
-                    chat.id;
-
-
-                saveChats();
-
-                renderChat();
-
-                renderChatHistory();
-
+    chats.slice(0, 12).forEach(chat => {
+        const item = document.createElement("div");
+        item.className = `history-item${chat.id === currentChatId ? " active" : ""}`;
+        item.innerHTML = `<span>💬</span><span class="history-name"></span><button class="delete-chat" title="Delete chat" aria-label="Delete chat">×</button>`;
+        item.querySelector(".history-name").textContent = chat.title;
+        item.addEventListener("click", event => {
+            if (event.target.closest(".delete-chat")) {
+                deleteChat(chat.id);
+                return;
             }
-        );
-
-
-        history.appendChild(item);
-
+            currentChatId = chat.id;
+            saveState();
+            renderChat();
+            renderChatHistory();
+            closeSidebar();
+        });
+        list.appendChild(item);
     });
-
 }
-
-
-// ========================================
-// DELETE CHAT
-// ========================================
 
 function deleteChat(id) {
-
-    const confirmed =
-        confirm(
-            "Delete this chat?"
-        );
-
-
-    if (!confirmed) return;
-
-
-    chats =
-        chats.filter(
-            chat => chat.id !== id
-        );
-
-
-    if (currentChatId === id) {
-
-        currentChatId =
-            chats.length
-                ? chats[0].id
-                : null;
-
-    }
-
-
-    saveChats();
-
+    chats = chats.filter(chat => chat.id !== id);
+    if (currentChatId === id) currentChatId = chats[0]?.id || null;
+    saveState();
     renderChat();
-
     renderChatHistory();
-
 }
 
-
-// ========================================
-// MEMORY SYSTEM
-// ========================================
+function clearCurrentChat() {
+    const chat = getCurrentChat();
+    if (!chat || chat.messages.length === 0) return;
+    if (!confirm("Clear messages from this chat?")) return;
+    chat.messages = [];
+    chat.title = "New Chat";
+    saveState();
+    renderChat();
+    renderChatHistory();
+}
 
 function detectMemory(text) {
-
+    const lower = text.toLowerCase();
     const patterns = [
-
-        "mera naam",
-
-        "my name is",
-
-        "mujhe pasand",
-
-        "i like",
-
-        "i love",
-
-        "main rehta",
-
-        "i live",
-
-        "mera favourite",
-
-        "my favorite"
-
+        /(?:mera naam|my name is|i am)\s+([^.!?\n]{2,50})/i,
+        /(?:mujhe pasand|i like|i love)\s+([^.!?\n]{2,60})/i,
+        /(?:mera favourite|my favorite)\s+([^.!?\n]{2,60})/i
     ];
-
-
-    const lower =
-        text.toLowerCase();
-
-
-    const found =
-        patterns.some(
-            pattern =>
-                lower.includes(pattern)
-        );
-
-
-    if (!found) return;
-
-
-    if (
-        !memory.includes(text)
-    ) {
-
-        memory.push(text);
-
-        localStorage.setItem(
-            "avaniMemory",
-            JSON.stringify(memory)
-        );
-
+    for (const pattern of patterns) {
+        const match = lower.match(pattern);
+        if (match && match[1]) {
+            const original = text.match(pattern)?.[0] || text;
+            const cleaned = original.trim();
+            if (!memory.some(item => item.toLowerCase() === cleaned.toLowerCase())) {
+                memory.unshift(cleaned);
+                memory = memory.slice(0, 20);
+                saveState();
+            }
+            break;
+        }
     }
-
 }
-
-
-// ========================================
-// SHOW MEMORY
-// ========================================
 
 function showMemory() {
-
-    const old =
-        document.getElementById(
-            "memoryPanel"
-        );
-
-
-    if (old) {
-
-        old.remove();
-
-        return;
-
+    const list = $("memoryList");
+    if (!list) return;
+    list.innerHTML = "";
+    if (!memory.length) {
+        list.innerHTML = `<div class="empty-memory">No saved memories yet.</div>`;
+    } else {
+        memory.forEach(item => {
+            const row = document.createElement("div");
+            row.className = "memory-item";
+            row.textContent = item;
+            list.appendChild(row);
+        });
     }
-
-
-    const panel =
-        document.createElement(
-            "div"
-        );
-
-
-    panel.id =
-        "memoryPanel";
-
-
-    panel.innerHTML = `
-        <div class="memory-box">
-
-            <div class="memory-header">
-
-                <h2>🧠 Avani Memory</h2>
-
-                <button id="closeMemory">
-                    ×
-                </button>
-
-            </div>
-
-            <p>
-                Avani remembers useful information
-                from this browser.
-            </p>
-
-            <div class="memory-list">
-
-                ${
-                    memory.length
-                    ? memory.map(
-                        item =>
-                        `<div class="memory-item">
-                            🧠 ${escapeHTML(item)}
-                        </div>`
-                    ).join("")
-                    : `
-                        <div class="empty-memory">
-                            No memories yet.
-                        </div>
-                    `
-                }
-
-            </div>
-
-            ${
-                memory.length
-                ? `
-                    <button
-                        id="clearMemory"
-                        class="clear-memory"
-                    >
-                        Clear Memory
-                    </button>
-                `
-                : ""
-            }
-
-        </div>
-    `;
-
-
-    document.body.appendChild(
-        panel
-    );
-
-
-    document.getElementById(
-        "closeMemory"
-    ).onclick = () => {
-
-        panel.remove();
-
-    };
-
-
-    const clearButton =
-        document.getElementById(
-            "clearMemory"
-        );
-
-
-    if (clearButton) {
-
-        clearButton.onclick =
-            () => {
-
-                if (
-                    confirm(
-                        "Clear all Avani memories?"
-                    )
-                ) {
-
-                    memory = [];
-
-                    localStorage.removeItem(
-                        "avaniMemory"
-                    );
-
-                    panel.remove();
-
-                    showMemory();
-
-                }
-
-            };
-
-    }
-
+    openModal("memoryModal");
 }
 
-
-// ========================================
-// HTML SECURITY
-// ========================================
-
-function escapeHTML(text) {
-
-    return text
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-
+function escapeHTML(value) {
+    return String(value).replace(/[&<>'"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[char]));
 }
 
+function openModal(id) { const modal = $(id); if (modal) modal.hidden = false; }
+function closeModal(id) { const modal = $(id); if (modal) modal.hidden = true; }
 
-// ========================================
-// ADD EXTRA UI STYLES
-// ========================================
-
-const extraStyles =
-document.createElement("style");
-
-
-extraStyles.textContent = `
-
-#avaniHistory {
-
-    margin-top: 14px;
-
-    max-height: 330px;
-
-    overflow-y: auto;
-
+function setupModals() {
+    document.querySelectorAll("[data-close]").forEach(btn => btn.addEventListener("click", () => closeModal(btn.dataset.close)));
+    document.querySelectorAll(".modal").forEach(modal => modal.addEventListener("click", e => { if (e.target === modal) modal.hidden = true; }));
+    document.addEventListener("keydown", e => { if (e.key === "Escape") document.querySelectorAll(".modal:not([hidden])").forEach(m => m.hidden = true); });
 }
 
-
-.history-title {
-
-    font-size: 12px;
-
-    color: #8f96aa;
-
-    padding: 8px 12px;
-
+function setupPrompts() {
+    document.querySelectorAll("[data-prompt]").forEach(btn => btn.addEventListener("click", () => {
+        input.value = btn.dataset.prompt;
+        autoResizeInput();
+        input.focus();
+    }));
 }
 
-
-.history-item {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 8px;
-
-    padding: 10px 12px;
-
-    margin: 4px 0;
-
-    border-radius: 10px;
-
-    cursor: pointer;
-
-    color: #dce1ef;
-
-    font-size: 13px;
-
-    transition: 0.2s;
-
+function autoResizeInput() {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 150) + "px";
 }
 
-
-.history-item:hover {
-
-    background: rgba(255,255,255,0.07);
-
-}
-
-
-.history-item.active {
-
-    background: rgba(100,70,220,0.22);
-
-}
-
-
-.history-name {
-
-    flex: 1;
-
-    overflow: hidden;
-
-    white-space: nowrap;
-
-    text-overflow: ellipsis;
-
-}
-
-
-.delete-chat {
-
-    border: none;
-
-    background: transparent;
-
-    color: #777;
-
-    cursor: pointer;
-
-    font-size: 18px;
-
-}
-
-
-.delete-chat:hover {
-
-    color: #ff5f6d;
-
-}
-
-
-#memoryPanel {
-
-    position: fixed;
-
-    inset: 0;
-
-    background: rgba(0,0,0,0.65);
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    z-index: 9999;
-
-    backdrop-filter: blur(8px);
-
-}
-
-
-.memory-box {
-
-    width: min(460px, 90%);
-
-    max-height: 70vh;
-
-    overflow-y: auto;
-
-    background: #111522;
-
-    border: 1px solid rgba(130,100,255,0.4);
-
-    border-radius: 18px;
-
-    padding: 22px;
-
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-
-}
-
-
-.memory-header {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-}
-
-
-.memory-header h2 {
-
-    margin: 0;
-
-}
-
-
-#closeMemory {
-
-    border: none;
-
-    background: transparent;
-
-    color: white;
-
-    font-size: 28px;
-
-    cursor: pointer;
-
-}
-
-
-.memory-box p {
-
-    color: #9ca4b8;
-
-    font-size: 14px;
-
-}
-
-
-.memory-item {
-
-    background: rgba(255,255,255,0.05);
-
-    padding: 12px;
-
-    border-radius: 10px;
-
-    margin: 8px 0;
-
-    color: #e8ebf5;
-
-}
-
-
-.empty-memory {
-
-    color: #888;
-
-    text-align: center;
-
-    padding: 25px;
-
-}
-
-
-.clear-memory {
-
-    width: 100%;
-
-    margin-top: 15px;
-
-    padding: 11px;
-
-    border: none;
-
-    border-radius: 10px;
-
-    background: #d84a5b;
-
-    color: white;
-
-    cursor: pointer;
-
-}
-
-
-`;
-
-document.head.appendChild(
-    extraStyles
-);
-
-
-// ========================================
-// NEW CHAT BUTTON
-// ========================================
-
-const newChatButton =
-    document.querySelector(
-        ".sidebar button"
-    );
-
-
-if (newChatButton) {
-
-    newChatButton.onclick =
-        createNewChat;
-
-}
-
-
-// ========================================
-// MEMORY BUTTON
-// ========================================
-
-const sidebarItems =
-    document.querySelectorAll(
-        ".sidebar *"
-    );
-
-
-sidebarItems.forEach(element => {
-
-    if (
-        element.textContent.trim()
-            === "Memory"
-    ) {
-
-        element.addEventListener(
-            "click",
-            showMemory
-        );
-
-    }
-
-});
-
-
-// ========================================
-// ENTER KEY
-// ========================================
-
-input.addEventListener(
-    "keydown",
-    function(event) {
-
-        if (
-            event.key === "Enter" &&
-            !event.shiftKey
-        ) {
-
-            event.preventDefault();
-
+function setupInput() {
+    input.addEventListener("input", autoResizeInput);
+    input.addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
             sendMessage();
-
         }
+    });
+    $("sendButton")?.addEventListener("click", () => sendMessage());
+    $("newChatButton")?.addEventListener("click", createNewChat);
+    $("clearChatButton")?.addEventListener("click", clearCurrentChat);
+}
 
+function setupNavigation() {
+    $("chatNav")?.addEventListener("click", () => { closeSidebar(); input.focus(); });
+    $("memoryNav")?.addEventListener("click", showMemory);
+    $("settingsNav")?.addEventListener("click", () => openModal("settingsModal"));
+    $("clearMemoryButton")?.addEventListener("click", () => {
+        if (!memory.length) return;
+        if (confirm("Clear all saved Avani memory?")) { memory = []; saveState(); showMemory(); }
+    });
+}
+
+function setupSettings() {
+    const theme = $("themeToggle");
+    const quick = $("quickPromptToggle");
+    const voice = $("voiceSettingToggle");
+    if (theme) {
+        theme.checked = localStorage.getItem("avaniTheme") !== "light";
+        theme.addEventListener("change", () => {
+            localStorage.setItem("avaniTheme", theme.checked ? "dark" : "light");
+            document.body.classList.toggle("light-mode", !theme.checked);
+        });
     }
-);
-
-
-// ========================================
-// START AVANI
-// ========================================
-
-if (!currentChatId && chats.length) {
-
-    currentChatId =
-        chats[0].id;
-
+    if (quick) {
+        quick.checked = localStorage.getItem("avaniQuickPrompts") !== "off";
+        quick.addEventListener("change", () => {
+            localStorage.setItem("avaniQuickPrompts", quick.checked ? "on" : "off");
+            $("quickPrompts").style.display = quick.checked ? "flex" : "none";
+        });
+        if (!quick.checked) $("quickPrompts").style.display = "none";
+    }
+    if (voice) {
+        voice.checked = voiceEnabled;
+        voice.addEventListener("change", () => { voiceEnabled = voice.checked; saveState(); updateVoiceButton(); });
+    }
+    document.body.classList.toggle("light-mode", localStorage.getItem("avaniTheme") === "light");
 }
 
-
-if (!currentChatId) {
-
-    createNewChat();
-
-} else {
-
-    saveChats();
-
-    renderChat();
-
-    renderChatHistory();
-
+function updateVoiceButton() {
+    const button = $("voiceToggle");
+    if (!button) return;
+    button.textContent = voiceEnabled ? "🔊" : "🔇";
+    button.classList.toggle("active", voiceEnabled);
+    button.title = voiceEnabled ? "Voice replies on" : "Voice replies off";
+    const setting = $("voiceSettingToggle");
+    if (setting) setting.checked = voiceEnabled;
 }
 
+function speakReply(text) {
+    if (!voiceEnabled || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text.slice(0, 1200));
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    window.speechSynthesis.speak(utterance);
+}
 
-input.focus();
+function setupVoice() {
+    updateVoiceButton();
+    $("voiceToggle")?.addEventListener("click", () => {
+        voiceEnabled = !voiceEnabled;
+        saveState();
+        updateVoiceButton();
+        if (!voiceEnabled && "speechSynthesis" in window) window.speechSynthesis.cancel();
+    });
+
+    const mic = $("micButton");
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!mic) return;
+    if (!SpeechRecognition) {
+        mic.title = "Voice input is not supported in this browser";
+        return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-IN";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => { mic.classList.add("active"); mic.textContent = "⏺️"; };
+    recognition.onend = () => { mic.classList.remove("active"); mic.textContent = "🎙️"; };
+    recognition.onerror = () => { mic.classList.remove("active"); mic.textContent = "🎙️"; };
+    recognition.onresult = event => {
+        input.value = event.results[0][0].transcript;
+        autoResizeInput();
+        input.focus();
+    };
+    mic.addEventListener("click", () => recognition.start());
+}
+
+function setupFileAttach() {
+    const button = $("attachButton");
+    const fileInput = $("fileInput");
+    if (!button || !fileInput) return;
+    button.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", async () => {
+        const file = fileInput.files?.[0];
+        if (!file) return;
+        try {
+            const text = await file.text();
+            const clipped = text.length > 12000 ? text.slice(0, 12000) + "\n[File clipped at 12,000 characters]" : text;
+            input.value = `Please analyze this file: ${file.name}\n\n${clipped}`;
+            autoResizeInput();
+            input.focus();
+        } catch (error) {
+            addMessage("I couldn't read that file in the browser.", "ai");
+        }
+        fileInput.value = "";
+    });
+}
+
+function setupMobileSidebar() {
+    $("sidebarToggle")?.addEventListener("click", () => {
+        $("sidebar")?.classList.add("open");
+        $("mobileOverlay")?.classList.add("show");
+    });
+    $("mobileOverlay")?.addEventListener("click", closeSidebar);
+}
+
+function closeSidebar() {
+    $("sidebar")?.classList.remove("open");
+    $("mobileOverlay")?.classList.remove("show");
+}
+
+// Start the app.
+if (!currentChatId || !getCurrentChat()) {
+    currentChatId = chats[0]?.id || null;
+}
+saveState();
+renderChat();
+renderChatHistory();
+setupInput();
+setupPrompts();
+setupNavigation();
+setupSettings();
+setupVoice();
+setupFileAttach();
+setupMobileSidebar();
+setupModals();
+autoResizeInput();
