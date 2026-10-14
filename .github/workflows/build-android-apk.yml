@@ -2,6 +2,15 @@ name: Build Avani AI Android APK
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "style.css"
+      - "app-v5.js"
+      - "fix-v6.js"
+      - "capacitor.config.json"
+      - ".github/workflows/build-android-apk.yml"
 
 permissions:
   contents: read
