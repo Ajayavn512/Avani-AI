@@ -1,0 +1,12 @@
+{
+  "appId": "com.ajayavn512.avaniai",
+  "appName": "Avani AI",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
