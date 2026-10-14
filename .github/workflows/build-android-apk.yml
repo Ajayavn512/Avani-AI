@@ -37,6 +37,8 @@ jobs:
         run: npx cap add android
       - name: Sync app
         run: npx cap sync android
+      - name: Add microphone permission
+        run: sed -i '/<application/i\\    <uses-permission android:name="android.permission.RECORD_AUDIO" />' android/app/src/main/AndroidManifest.xml
       - name: Build APK
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
